@@ -799,3 +799,125 @@ tr:last-child td {
 .stars {
     color: #fbbf24;
 }
+
+/* Financial Management */
+.financial-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    gap: 1.5rem;
+}
+
+.financial-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    flex: 1;
+    overflow: hidden;
+}
+
+.financial-column {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.financial-header {
+    padding: 1.25rem 1.5rem;
+    background-color: var(--bg-surface-hover);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.financial-header h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.financial-header.inflow h2 {
+    color: var(--accent-green);
+}
+
+.financial-header.outflow h2 {
+    color: var(--accent-orange);
+}
+
+.financial-list {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.financial-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border-color);
+    align-items: center;
+    transition: background-color 0.2s;
+}
+
+.financial-row:hover {
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.financial-row:last-child {
+    border-bottom: none;
+}
+
+.financial-category {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.financial-amount {
+    font-family: monospace;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.inflow-amount {
+    color: var(--accent-green);
+}
+
+.outflow-amount {
+    color: var(--accent-orange);
+}
+
+.manual-entry-section {
+    padding: 1.5rem;
+    background-color: rgba(245, 158, 11, 0.05);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.manual-entry-text {
+    font-size: 0.85rem;
+    color: var(--accent-orange);
+    font-style: italic;
+    line-height: 1.4;
+}
+
+.upload-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.indemnification-footer {
+    padding: 1rem;
+    text-align: center;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
