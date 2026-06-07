@@ -13,6 +13,42 @@
     --accent-red: #ef4444;
 
     --font-main: 'Inter', sans-serif;
+
+    /* Theme custom properties for transparency/shadow adjustments */
+    --bg-header: rgba(9, 9, 11, 0.8);
+    --bg-dropdown: rgba(13, 14, 20, 0.92);
+    --border-dropdown: rgba(255, 255, 255, 0.1);
+    --shadow-dropdown: rgba(0, 0, 0, 0.5);
+    --inset-shadow-dropdown: rgba(255, 255, 255, 0.05);
+    --dropdown-item-hover: rgba(255, 255, 255, 0.04);
+    --dropdown-divider-color: rgba(255, 255, 255, 0.08);
+    
+    --shadow-card-hover: rgba(0, 0, 0, 0.2);
+    --border-card-hover: rgba(255, 255, 255, 0.1);
+    
+    --bg-row-hover: rgba(255, 255, 255, 0.02);
+}
+
+[data-theme="light"] {
+    --bg-main: #f9fafb;
+    --bg-surface: #ffffff;
+    --bg-surface-hover: #f3f4f6;
+    --border-color: #e5e7eb;
+    --text-primary: #111827;
+    --text-secondary: #71717a;
+
+    --bg-header: rgba(255, 255, 255, 0.8);
+    --bg-dropdown: rgba(255, 255, 255, 0.95);
+    --border-dropdown: rgba(0, 0, 0, 0.08);
+    --shadow-dropdown: rgba(0, 0, 0, 0.08);
+    --inset-shadow-dropdown: rgba(255, 255, 255, 0);
+    --dropdown-item-hover: rgba(0, 0, 0, 0.04);
+    --dropdown-divider-color: rgba(0, 0, 0, 0.06);
+
+    --shadow-card-hover: rgba(0, 0, 0, 0.06);
+    --border-card-hover: rgba(0, 0, 0, 0.08);
+
+    --bg-row-hover: rgba(0, 0, 0, 0.02);
 }
 
 * {
@@ -26,6 +62,11 @@ body {
     background-color: var(--bg-main);
     color: var(--text-primary);
     overflow: hidden;
+    transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+body, .sidebar, .top-header, .search-bar, .widget, .metric-card, .calendar-cell, .booking-content, .venue-dropdown, .qty-control, .document-item, .financial-column, .financial-header, .financial-row {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .app-container {
@@ -166,7 +207,7 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 2rem;
-    background-color: rgba(9, 9, 11, 0.8);
+    background-color: var(--bg-header);
     backdrop-filter: blur(12px);
     z-index: 10;
 }
@@ -268,6 +309,146 @@ body {
     color: var(--text-secondary);
 }
 
+/* Modern Profile Dropdown */
+.profile-dropdown {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    background: var(--bg-dropdown);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    border: 1px solid var(--border-dropdown);
+    border-radius: 16px;
+    box-shadow: 0 10px 30px var(--shadow-dropdown), inset 0 1px 0 var(--inset-shadow-dropdown);
+    width: 260px;
+    z-index: 1000;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transform-origin: top right;
+    animation: dropdownSlideIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropdownSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.dropdown-user-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 6px;
+}
+
+.dropdown-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.dropdown-user-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    text-align: left;
+}
+
+.dropdown-name {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.dropdown-role {
+    font-size: 0.75rem;
+    color: var(--accent-blue);
+    font-weight: 500;
+    margin-top: 2px;
+    text-align: left;
+}
+
+.dropdown-email {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    margin-top: 2px;
+    text-align: left;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: var(--dropdown-divider-color);
+    margin: 4px 0;
+}
+
+.dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+}
+
+.dropdown-item i {
+    font-size: 0.95rem;
+    transition: transform 0.2s;
+}
+
+.dropdown-item:hover {
+    background: var(--dropdown-item-hover);
+    color: var(--text-primary);
+}
+
+.dropdown-item:hover i {
+    transform: translateX(2px);
+}
+
+.dropdown-item.logout {
+    color: rgba(239, 68, 68, 0.85);
+}
+
+.dropdown-item.logout:hover {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+}
+
+.dropdown-item.logout:hover i {
+    transform: translateX(2px);
+}
+
 /* Views Container */
 .views-container {
     flex: 1;
@@ -363,8 +544,8 @@ body {
 
 .metric-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    border-color: rgba(255,255,255,0.1);
+    box-shadow: 0 10px 20px var(--shadow-card-hover);
+    border-color: var(--border-card-hover);
 }
 
 .metric-icon {
@@ -472,7 +653,7 @@ th {
 
 td {
     padding: 1rem 0;
-    border-bottom: 1px solid rgba(39, 39, 42, 0.5);
+    border-bottom: 1px solid var(--border-color);
     font-size: 0.9rem;
 }
 
@@ -862,7 +1043,7 @@ tr:last-child td {
 }
 
 .financial-row:hover {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--bg-row-hover);
 }
 
 .financial-row:last-child {

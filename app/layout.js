@@ -1,10 +1,6 @@
 import './globals.css'
-import { Inter, Montserrat } from 'next/font/google'
-import Sidebar from '../components/Sidebar'
-import Header from '../components/Header'
+import LayoutWrapper from '../components/LayoutWrapper'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-main' })
-const montserrat = Montserrat({ subsets: ['latin'], weight: ['600', '700', '800'], variable: '--font-logo' })
 export const metadata = {
   title: 'PlayMetric - Academy Console',
   description: 'Business Management Console for PlayMetric',
@@ -15,17 +11,22 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+        <script dangerouslySetInnerHTML={{
+          __html: `
+            (function() {
+              const theme = localStorage.getItem('theme') || 'dark';
+              document.documentElement.setAttribute('data-theme', theme);
+            })();
+          `
+        }} />
       </head>
-      <body className={`${inter.variable} ${montserrat.variable}`}>
-        <div className="app-container">
-          <Sidebar />
-          <main className="main-content">
-            <Header />
-            <div className="views-container">
-              {children}
-            </div>
-          </main>
-        </div>
+      <body style={{
+        '--font-main': "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+        '--font-logo': "'Montserrat', 'Inter', system-ui, sans-serif"
+      }}>
+        <LayoutWrapper>
+          {children}
+        </LayoutWrapper>
       </body>
     </html>
   )
