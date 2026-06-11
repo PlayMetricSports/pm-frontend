@@ -89,7 +89,7 @@ export default function ReviewsPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--accent-blue)', fontWeight: 600, fontSize: '0.9rem' }}>
                         <i className="fa-solid fa-reply"></i> Response from PlayMetric
                     </div>
-                    <p style={{ fontSize: '0.9rem' }}>Hi Vikram, thank you for the feedback. We've had our maintenance team recalibrate the bowling machine and clean the run-up area. Hope to see you back soon!</p>
+                    <p style={{ fontSize: '0.9rem' }}>Hi Vikram, thank you for the feedback. We&apos;ve had our maintenance team recalibrate the bowling machine and clean the run-up area. Hope to see you back soon!</p>
                 </div>
             </div>
         </div>

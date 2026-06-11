@@ -35,7 +35,7 @@ export default function TicketsPage() {
                         <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>#TCK-092</span>
                     </div>
                     <h4 style={{ marginBottom: '0.5rem' }}>Billing inquiry - Corporate Event</h4>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>TechCorp requesting split invoice for last week's offsite event.</p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>TechCorp requesting split invoice for last week&apos;s offsite event.</p>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div className="avatar" style={{ width: '24px', height: '24px', fontSize: '0.7rem' }}>A</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>

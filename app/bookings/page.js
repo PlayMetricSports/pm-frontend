@@ -49,7 +49,7 @@ export default function BookingsPage() {
           {activeBookingTab === 'calendar' && (
             <div>
               <div className="calendar-header">
-                <h3>Today's Schedule</h3>
+                <h3>Today&apos;s Schedule</h3>
                 <div className="date-filter">
                   <span>Wed, May 13</span>
                   <i className="fa-solid fa-calendar"></i>

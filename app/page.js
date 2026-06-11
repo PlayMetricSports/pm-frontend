@@ -4,7 +4,7 @@ export default function DashboardOverviewPage() {
       <div className="view-header">
           <div>
               <h1>Overview</h1>
-              <p className="subtitle">Welcome back, here's what's happening at your academy today.</p>
+              <p className="subtitle">Welcome back, here&apos;s what&apos;s happening at your academy today.</p>
           </div>
           <div className="date-filter">
               <span>Today</span>
