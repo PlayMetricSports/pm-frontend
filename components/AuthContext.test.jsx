@@ -69,7 +69,7 @@ describe('AuthContext and AuthGuard tests', () => {
       expect(screen.getByTestId('user-role').textContent).toBe('Admin');
     });
 
-    it('should use fallback admin user when verifyAuth fails but token exists', async () => {
+    it('should clear user when verifyAuth fails but token exists', async () => {
       api.verifyAuth.mockRejectedValueOnce(new Error('Network error'));
 
       render(
@@ -79,9 +79,9 @@ describe('AuthContext and AuthGuard tests', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('auth-state').textContent).toBe('authenticated');
+        expect(screen.getByTestId('auth-state').textContent).toBe('unauthenticated');
       });
-      expect(screen.getByTestId('user-email').textContent).toBe('aritra.naharay@gmail.com');
+      expect(screen.getByTestId('user-email').textContent).toBe('no-email');
     });
   });
 

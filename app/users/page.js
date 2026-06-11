@@ -347,8 +347,8 @@ export default function UsersPage() {
 
       <div className="form-row">
         <div className="form-group half">
-          <label>Role</label>
-          <select name="userRole" value={formData.userRole} onChange={handleInputChange}>
+          <label htmlFor="userRole">Role</label>
+          <select id="userRole" name="userRole" value={formData.userRole} onChange={handleInputChange}>
             {rolesList.map(r => (
               <option key={r} value={r}>{capitalizeWord(r)}</option>
             ))}

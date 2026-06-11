@@ -15,6 +15,7 @@ vi.mock('@/components/AuthContext', () => ({
   useAuth: () => ({
     user: mockAuthUser,
     loading: false,
+    isAdmin: mockAuthUser?.userType === 'admin' || mockAuthUser?.isAdmin === 'yes',
   }),
 }));
 
@@ -141,6 +142,10 @@ describe('Users Page Directory tests', () => {
     const inviteBtn = screen.getByRole('button', { name: 'Invite Staff' });
     fireEvent.click(inviteBtn);
 
+    // Select coach to enable the organization dropdown
+    const roleSelect = screen.getByLabelText('Role', { selector: 'select' });
+    fireEvent.change(roleSelect, { target: { value: 'coach' } });
+
     // Verify modal is open and shows Organization select dropdown
     const orgSelect = screen.getByLabelText('Organization');
     expect(orgSelect).toBeInTheDocument();
@@ -169,6 +174,10 @@ describe('Users Page Directory tests', () => {
 
     const inviteBtn = screen.getByRole('button', { name: 'Invite Staff' });
     fireEvent.click(inviteBtn);
+
+    // Select coach to enable the organization dropdown
+    const roleSelect = screen.getByLabelText('Role');
+    fireEvent.change(roleSelect, { target: { value: 'coach' } });
 
     // Verify organization dropdown is disabled/locked
     const orgSelect = screen.getByLabelText('Organization');
