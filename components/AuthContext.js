@@ -3,6 +3,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { api, getAuthToken, setAuthToken } from '@/lib/api';
+import { isUserAdmin } from '@/lib/helpers';
 
 const AuthContext = createContext({
   user: null,
@@ -58,9 +59,12 @@ export function AuthProvider({ children }) {
           }
         }
 
-        // Use fallback user data if verifyAuth failed but token is present
+        // If verification failed and no cached data available, clear token and force re-login
         if (!userData) {
-          userData = { email: 'aritra.naharay@gmail.com', userRole: 'admin', designation: 'Owner' };
+          setAuthToken(null);
+          setUser(null);
+          setLoading(false);
+          return;
         }
         setUser(userData);
       } catch (err) {
@@ -72,7 +76,8 @@ export function AuthProvider({ children }) {
       }
     }
     checkAuth();
-  }, [pathname]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const login = async (email, password) => {
     setLoading(true);
@@ -88,7 +93,7 @@ export function AuthProvider({ children }) {
       }
 
       if (!userData) {
-        userData = response?.user || response?.data || { email, userRole: 'admin', designation: 'Owner' };
+        userData = response?.user || response?.data || { email };
       } else {
         userData = {
           ...response?.data,
@@ -139,7 +144,8 @@ export function AuthProvider({ children }) {
       }
 
       if (!userData) {
-        userData = { email: 'aritra.naharay@gmail.com', userRole: 'admin', designation: 'Owner' };
+        // Token was accepted but no user data — set minimal session
+        userData = { email: 'unknown', userRole: 'unknown' };
       }
       setUser(userData);
       router.push('/');
@@ -167,7 +173,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginWithToken, logout, isAuthenticated: !!user }}>
+    <AuthContext.Provider value={{ user, loading, login, loginWithToken, logout, isAuthenticated: !!user, isAdmin: isUserAdmin(user) }}>
       {children}
     </AuthContext.Provider>
   );
@@ -198,7 +204,7 @@ export function AuthGuard({ children }) {
     if (!user) return false;
     
     // Admins have access to everything
-    if (user.userType === 'admin' || user.userRoleName?.toLowerCase() === 'admin' || user.isAdmin === 'yes') {
+    if (isUserAdmin(user)) {
       return true;
     }
     

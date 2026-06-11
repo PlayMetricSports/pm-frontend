@@ -3,14 +3,24 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { useAuth } from '@/components/AuthContext';
+import { useToast } from '@/components/Toast';
+import Modal from '@/components/Modal';
+import { normalizeApiResponse, capitalizeWord, formatErrorMessage } from '@/lib/helpers';
 
 export default function UsersPage() {
+  const { user, isAdmin } = useAuth();
+  const { showToast } = useToast();
+
   // State variables
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('All');
+  
+  // Organisations list state
+  const [organisationsList, setOrganisationsList] = useState([]);
   
   // Modals state
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
@@ -40,33 +50,13 @@ export default function UsersPage() {
   const [deptsList, setDeptsList] = useState(['administration', 'coaching', 'operations', 'facilities']);
   const [rolesObjects, setRolesObjects] = useState([]);
 
-  // Fetch employees on component mount
+  // Fetch employees
   const fetchEmployees = async () => {
     setLoading(true);
     setError('');
     try {
       const response = await api.getEmployees();
-      // Handle different formats that the API might return
-      let data = [];
-      if (Array.isArray(response)) {
-        data = response;
-      } else if (response && Array.isArray(response.data)) {
-        data = response.data;
-      } else if (response && response.data && Array.isArray(response.data.employees)) {
-        data = response.data.employees;
-      } else if (response && typeof response === 'object') {
-        // Look for any array inside response
-        const arrayKey = Object.keys(response).find(key => Array.isArray(response[key]));
-        if (arrayKey) {
-          data = response[arrayKey];
-        } else if (response.data && typeof response.data === 'object') {
-          // Look inside response.data
-          const innerKey = Object.keys(response.data).find(key => Array.isArray(response.data[key]));
-          if (innerKey) {
-            data = response.data[innerKey];
-          }
-        }
-      }
+      const data = normalizeApiResponse(response, 'employees');
 
       // Normalize backend nested format to flat frontend schema
       const normalizedData = data.map(emp => {
@@ -87,53 +77,10 @@ export default function UsersPage() {
         };
       });
 
-
       setEmployees(normalizedData);
     } catch (err) {
       console.error('Failed to fetch employees:', err);
-      setError('Could not fetch employees from the server. Using offline mock data.');
-      // Fallback mock data if server fails
-      setEmployees([
-        {
-          firstName: 'Rohan',
-          middleName: '',
-          lastName: 'Mehta',
-          email: 'rohan@playmetric.in',
-          countryCode: '+91',
-          mobileNumber: '9876543210',
-          department: 'administration',
-          userRole: 'admin',
-          organization: 'Sportizo',
-          employeeCode: 'EV-101',
-          designation: 'Owner/Admin'
-        },
-        {
-          firstName: 'Anjali',
-          middleName: '',
-          lastName: 'Desai',
-          email: 'anjali.d@playmetric.in',
-          countryCode: '+91',
-          mobileNumber: '9876543211',
-          department: 'operations',
-          userRole: 'operations',
-          organization: 'Sportizo',
-          employeeCode: 'EV-102',
-          designation: 'Venue Manager'
-        },
-        {
-          firstName: 'Vikram',
-          middleName: '',
-          lastName: 'Singh',
-          email: 'vikram.coach@playmetric.in',
-          countryCode: '+91',
-          mobileNumber: '9876543212',
-          department: 'coaching',
-          userRole: 'coach',
-          organization: 'Sportizo',
-          employeeCode: 'EV-103',
-          designation: 'Head Coach'
-        }
-      ]);
+      setError('Could not fetch employees from the server.');
     } finally {
       setLoading(false);
     }
@@ -167,9 +114,32 @@ export default function UsersPage() {
     }
   };
 
+  const fetchOrganisations = async () => {
+    try {
+      const res = await api.getOrganisations();
+      const data = normalizeApiResponse(res, 'orgs', 'organisations');
+      
+      const custom = typeof window !== 'undefined' && localStorage.getItem('pm_custom_orgs')
+        ? JSON.parse(localStorage.getItem('pm_custom_orgs') || '[]')
+        : [];
+
+      const baseOrgs = data.length > 0 ? data : [{ _id: '6a299c62d7c28c0c99219fda', name: 'Sportizo' }, { _id: '6a299c62d7c28c0c99219fdb', name: 'PlayArena' }];
+      const uniqueCustom = custom.filter(c => !baseOrgs.some(b => b.name === c.name || b._id === c._id));
+      const mergedNames = [...baseOrgs, ...uniqueCustom].map(org => org.name);
+      setOrganisationsList(mergedNames);
+    } catch (err) {
+      console.warn('Could not fetch organisations', err);
+      const custom = typeof window !== 'undefined' && localStorage.getItem('pm_custom_orgs')
+        ? JSON.parse(localStorage.getItem('pm_custom_orgs') || '[]')
+        : [];
+      const mergedNames = ['Sportizo', 'PlayArena', ...custom.map(org => org.name)];
+      setOrganisationsList(mergedNames);
+    }
+  };
+
+  // Parallel fetch on mount
   useEffect(() => {
-    fetchEmployees();
-    fetchMetadata();
+    Promise.all([fetchEmployees(), fetchMetadata(), fetchOrganisations()]);
   }, []);
 
   // Handle Form field changes
@@ -184,6 +154,17 @@ export default function UsersPage() {
   // Open invite modal
   const openInviteModal = () => {
     setModalError('');
+
+    // Determine default organization
+    let defaultOrg = 'Sportizo';
+    if (isAdmin) {
+      if (organisationsList.length > 0) {
+        defaultOrg = organisationsList[0];
+      }
+    } else {
+      defaultOrg = user?.organization || 'Sportizo';
+    }
+
     setFormData({
       firstName: '',
       middleName: '',
@@ -193,7 +174,7 @@ export default function UsersPage() {
       mobileNumber: '',
       department: deptsList[0] || 'administration',
       userRole: rolesList[0] || 'admin',
-      organization: 'Sportizo',
+      organization: defaultOrg,
       employeeCode: `EV-${Math.floor(100 + Math.random() * 900)}`,
       designation: '',
     });
@@ -220,40 +201,6 @@ export default function UsersPage() {
     setEditModalOpen(true);
   };
 
-  const formatErrorMessage = (errorString) => {
-    try {
-      const parsed = JSON.parse(errorString);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map(err => {
-          if (err.message && err.message.includes('E11000 duplicate key error')) {
-            if (err.message.includes('mobileNumber.number')) {
-              return 'This mobile number is already registered to another user.';
-            }
-            if (err.message.includes('email')) {
-              return 'This email address is already registered to another user.';
-            }
-            if (err.message.includes('employeeCode')) {
-              return 'This employee code is already taken.';
-            }
-            return 'A record with duplicate unique details already exists.';
-          }
-          return err.message || JSON.stringify(err);
-        }).join('\n');
-      }
-    } catch (e) {
-      // Not a JSON error
-    }
-    
-    if (errorString.includes('E11000 duplicate key error')) {
-      if (errorString.includes('mobileNumber.number')) {
-        return 'This mobile number is already registered to another user.';
-      }
-      return 'A duplicate key error occurred on the database.';
-    }
-    
-    return errorString;
-  };
-
   // Create employee submission
   const handleInviteSubmit = async (e) => {
     e.preventDefault();
@@ -261,14 +208,23 @@ export default function UsersPage() {
     setModalError('');
     try {
       const matchedRole = rolesObjects.find(r => r.userRoleKey === formData.userRole || r.userRoleName?.toLowerCase() === formData.userRole);
-      const userType = matchedRole ? matchedRole.userType : 'employee';
+      const userType = matchedRole ? matchedRole.userType : (formData.userRole === 'admin' ? 'admin' : 'employee');
+      const isAdminUserType = formData.userRole === 'admin';
+      
+      if (!isAdminUserType && !formData.organization) {
+        setModalError('Organization is strictly mandatory for non-Admin users.');
+        setIsSubmitting(false);
+        return;
+      }
       
       await api.createEmployee({
         ...formData,
         mobileNumber: Number(formData.mobileNumber) || 0,
-        userType
+        userType,
+        organization: isAdminUserType ? [] : formData.organization
       });
       setInviteModalOpen(false);
+      showToast('Staff member invited successfully', 'success');
       fetchEmployees();
     } catch (err) {
       setModalError(formatErrorMessage(err.message));
@@ -284,17 +240,24 @@ export default function UsersPage() {
     setModalError('');
     try {
       const matchedRole = rolesObjects.find(r => r.userRoleKey === formData.userRole || r.userRoleName?.toLowerCase() === formData.userRole);
-      const userType = matchedRole ? matchedRole.userType : 'employee';
+      const userType = matchedRole ? matchedRole.userType : (formData.userRole === 'admin' ? 'admin' : 'employee');
+      const isAdminUserType = formData.userRole === 'admin';
+      
+      if (!isAdminUserType && !formData.organization) {
+        setModalError('Organization is strictly mandatory for non-Admin users.');
+        setIsSubmitting(false);
+        return;
+      }
 
-      // In PATCH /api/v1/staff/employee/edit/ we send the payload
-      // We attach the employeeCode so the backend knows which record to update
       await api.updateEmployee({
         ...formData,
         mobileNumber: Number(formData.mobileNumber) || 0,
         userType,
-        originalEmployeeCode: selectedEmployee.employeeCode // helper parameter in case backend needs matching
+        organization: isAdminUserType ? [] : formData.organization,
+        originalEmployeeCode: selectedEmployee.employeeCode
       });
       setEditModalOpen(false);
+      showToast('Staff member updated successfully', 'success');
       fetchEmployees();
     } catch (err) {
       setModalError(formatErrorMessage(err.message));
@@ -323,6 +286,121 @@ export default function UsersPage() {
 
     return matchesSearch && matchesTab;
   });
+
+  const isSelectedAdmin = formData.userRole === 'admin';
+
+  // Shared form JSX for both invite and edit modals
+  const renderEmployeeForm = (onSubmit, submitLabel) => (
+    <form onSubmit={onSubmit} className="modal-form">
+      {modalError && (
+        <div className="form-error-banner">
+          <i className="fa-solid fa-circle-exclamation"></i>
+          <span>{modalError}</span>
+        </div>
+      )}
+      <div className="form-row">
+        <div className="form-group half">
+          <label>First Name</label>
+          <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required />
+        </div>
+        <div className="form-group half">
+          <label>Middle Name</label>
+          <input type="text" name="middleName" value={formData.middleName} onChange={handleInputChange} />
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group half">
+          <label>Last Name</label>
+          <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required />
+        </div>
+        <div className="form-group half">
+          <label>{submitLabel === 'Apply Changes' ? 'Employee Code (Locked)' : 'Employee Code'}</label>
+          <input
+            type="text"
+            name="employeeCode"
+            value={formData.employeeCode}
+            onChange={handleInputChange}
+            required={submitLabel !== 'Apply Changes'}
+            disabled={submitLabel === 'Apply Changes'}
+            style={submitLabel === 'Apply Changes' ? {opacity: 0.6, cursor: 'not-allowed'} : {}}
+          />
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>Email Address</label>
+        <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
+      </div>
+
+      <div className="form-row">
+        <div className="form-group quarter">
+          <label>Code</label>
+          <input type="text" name="countryCode" value={formData.countryCode} onChange={handleInputChange} required />
+        </div>
+        <div className="form-group three-quarter">
+          <label>Mobile Number</label>
+          <input type="tel" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} required />
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group half">
+          <label>Role</label>
+          <select name="userRole" value={formData.userRole} onChange={handleInputChange}>
+            {rolesList.map(r => (
+              <option key={r} value={r}>{capitalizeWord(r)}</option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group half">
+          <label>Department</label>
+          <select name="department" value={formData.department} onChange={handleInputChange}>
+            {deptsList.map(d => (
+              <option key={d} value={d}>{capitalizeWord(d)}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="form-row">
+        <div className="form-group half">
+          <label>Designation</label>
+          <input type="text" name="designation" placeholder="e.g. Senior Coach" value={formData.designation} onChange={handleInputChange} required />
+        </div>
+        <div className="form-group half">
+          <label htmlFor="organization">Organization</label>
+          <select
+            id="organization"
+            name="organization"
+            value={formData.organization}
+            onChange={handleInputChange}
+            required={!isSelectedAdmin}
+            disabled={isSelectedAdmin || !isAdmin}
+          >
+            {isSelectedAdmin ? (
+              <option value="">Not Applicable (Admin)</option>
+            ) : !isAdmin ? (
+              <option value={user?.organization || formData.organization || 'Sportizo'}>
+                {user?.organization || formData.organization || 'Sportizo'}
+              </option>
+            ) : (
+              [...new Set([formData.organization, ...organisationsList])].filter(Boolean).map(org => (
+                <option key={org} value={org}>{org}</option>
+              ))
+            )}
+          </select>
+        </div>
+      </div>
+
+      <div className="modal-actions">
+        <button type="button" className="btn-cancel" onClick={() => { setInviteModalOpen(false); setEditModalOpen(false); }}>Cancel</button>
+        <button type="submit" className="btn-submit" disabled={isSubmitting}>
+          {isSubmitting ? <span className="spinner-mini"></span> : submitLabel}
+        </button>
+      </div>
+    </form>
+  );
 
   return (
     <div className="view active">
@@ -463,469 +541,14 @@ export default function UsersPage() {
       </div>
 
       {/* Invite Staff Modal */}
-      {inviteModalOpen && (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Invite Team Member</h2>
-              <button className="close-btn" onClick={() => setInviteModalOpen(false)}>
-                <i className="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-             <form onSubmit={handleInviteSubmit} className="modal-form">
-              {modalError && (
-                <div style={{
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1rem',
-                  color: '#ef4444',
-                  fontSize: '0.85rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '1rem'
-                }}>
-                  <i className="fa-solid fa-circle-exclamation"></i>
-                  <span>{modalError}</span>
-                </div>
-              )}
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>First Name</label>
-                  <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group half">
-                  <label>Middle Name</label>
-                  <input type="text" name="middleName" value={formData.middleName} onChange={handleInputChange} />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>Last Name</label>
-                  <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group half">
-                  <label>Employee Code</label>
-                  <input type="text" name="employeeCode" value={formData.employeeCode} onChange={handleInputChange} required />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group quarter">
-                  <label>Code</label>
-                  <input type="text" name="countryCode" value={formData.countryCode} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group three-quarter">
-                  <label>Mobile Number</label>
-                  <input type="tel" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} required />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>Role</label>
-                  <select name="userRole" value={formData.userRole} onChange={handleInputChange}>
-                    {rolesList.map(r => (
-                      <option key={r} value={r}>{r.toUpperCase()}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group half">
-                  <label>Department</label>
-                  <select name="department" value={formData.department} onChange={handleInputChange}>
-                    {deptsList.map(d => (
-                      <option key={d} value={d}>{d.toUpperCase()}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>Designation</label>
-                  <input type="text" name="designation" placeholder="e.g. Senior Coach" value={formData.designation} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group half">
-                  <label>Organization</label>
-                  <input type="text" name="organization" value={formData.organization} onChange={handleInputChange} required />
-                </div>
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={() => setInviteModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-submit" disabled={isSubmitting}>
-                  {isSubmitting ? <span className="spinner-mini"></span> : 'Send Invitation'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <Modal isOpen={inviteModalOpen} onClose={() => setInviteModalOpen(false)} title="Invite Team Member">
+        {renderEmployeeForm(handleInviteSubmit, 'Send Invitation')}
+      </Modal>
 
       {/* Edit Staff Modal */}
-      {editModalOpen && (
-        <div className="modal-backdrop">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Modify Staff Member</h2>
-              <button className="close-btn" onClick={() => setEditModalOpen(false)}>
-                <i className="fa-solid fa-xmark"></i>
-              </button>
-            </div>
-             <form onSubmit={handleEditSubmit} className="modal-form">
-              {modalError && (
-                <div style={{
-                  background: 'rgba(239, 68, 68, 0.08)',
-                  border: '1px solid rgba(239, 68, 68, 0.2)',
-                  borderRadius: '8px',
-                  padding: '0.75rem 1rem',
-                  color: '#ef4444',
-                  fontSize: '0.85rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  marginBottom: '1rem'
-                }}>
-                  <i className="fa-solid fa-circle-exclamation"></i>
-                  <span>{modalError}</span>
-                </div>
-              )}
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>First Name</label>
-                  <input type="text" name="firstName" value={formData.firstName} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group half">
-                  <label>Middle Name</label>
-                  <input type="text" name="middleName" value={formData.middleName} onChange={handleInputChange} />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>Last Name</label>
-                  <input type="text" name="lastName" value={formData.lastName} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group half">
-                  <label>Employee Code (Locked)</label>
-                  <input type="text" name="employeeCode" value={formData.employeeCode} disabled style={{opacity: 0.6, cursor: 'not-allowed'}} />
-                </div>
-              </div>
-
-              <div className="form-group">
-                <label>Email Address</label>
-                <input type="email" name="email" value={formData.email} onChange={handleInputChange} required />
-              </div>
-
-              <div className="form-row">
-                <div className="form-group quarter">
-                  <label>Code</label>
-                  <input type="text" name="countryCode" value={formData.countryCode} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group three-quarter">
-                  <label>Mobile Number</label>
-                  <input type="tel" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} required />
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>Role</label>
-                  <select name="userRole" value={formData.userRole} onChange={handleInputChange}>
-                    {rolesList.map(r => (
-                      <option key={r} value={r}>{r.toUpperCase()}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="form-group half">
-                  <label>Department</label>
-                  <select name="department" value={formData.department} onChange={handleInputChange}>
-                    {deptsList.map(d => (
-                      <option key={d} value={d}>{d.toUpperCase()}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group half">
-                  <label>Designation</label>
-                  <input type="text" name="designation" value={formData.designation} onChange={handleInputChange} required />
-                </div>
-                <div className="form-group half">
-                  <label>Organization</label>
-                  <input type="text" name="organization" value={formData.organization} onChange={handleInputChange} required />
-                </div>
-              </div>
-
-              <div className="modal-actions">
-                <button type="button" className="btn-cancel" onClick={() => setEditModalOpen(false)}>Cancel</button>
-                <button type="submit" className="btn-submit" disabled={isSubmitting}>
-                  {isSubmitting ? <span className="spinner-mini"></span> : 'Apply Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      <style jsx>{`
-        .warning-banner {
-          background: rgba(245, 158, 11, 0.08);
-          border: 1px solid rgba(245, 158, 11, 0.2);
-          border-radius: 12px;
-          padding: 0.75rem 1.25rem;
-          color: #f59e0b;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 1.5rem;
-          font-size: 0.9rem;
-        }
-
-        .refresh-btn {
-          margin-left: auto;
-          background: rgba(245, 158, 11, 0.1);
-          border: 1px solid rgba(245, 158, 11, 0.2);
-          color: #f59e0b;
-          padding: 4px 10px;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 0.8rem;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-          transition: all 0.2s;
-        }
-
-        .refresh-btn:hover {
-          background: rgba(245, 158, 11, 0.2);
-        }
-
-        .avatar-circle {
-          width: 36px;
-          height: 36px;
-          border-radius: 50%;
-          color: #ffffff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          font-size: 0.95rem;
-          margin-right: 12px;
-        }
-
-        .code-badge {
-          background: var(--bg-surface-hover);
-          border: 1px solid var(--border-color);
-          border-radius: 6px;
-          padding: 2px 6px;
-          font-family: monospace;
-          color: var(--text-secondary);
-          font-size: 0.85rem;
-        }
-
-        .edit-btn {
-          color: #3b82f6 !important;
-          font-size: 0.85rem;
-          display: flex;
-          align-items: center;
-          gap: 4px;
-        }
-
-        .loading-state, .empty-state {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 4rem 2rem;
-          color: var(--text-secondary);
-          gap: 1rem;
-        }
-
-        .empty-state i {
-          font-size: 2.5rem;
-          color: var(--border-color);
-        }
-
-        .spinner-large {
-          width: 40px;
-          height: 40px;
-          border: 3px solid rgba(59, 130, 246, 0.1);
-          border-top-color: #3b82f6;
-          border-radius: 50%;
-          animation: spin 1s linear infinite;
-        }
-
-        .modal-backdrop {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100vw;
-          height: 100vh;
-          background: rgba(0, 0, 0, 0.6);
-          backdrop-filter: blur(8px);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 10000;
-          padding: 1.5rem;
-        }
-
-        .modal-content {
-          background: var(--bg-surface);
-          border: 1px solid var(--border-color);
-          border-radius: 16px;
-          width: 100%;
-          max-width: 500px;
-          max-height: 90vh;
-          overflow-y: auto;
-          box-shadow: 0 20px 40px rgba(0,0,0,0.5);
-          display: flex;
-          flex-direction: column;
-        }
-
-        .modal-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          padding: 1.25rem 1.5rem;
-          border-bottom: 1px solid var(--border-color);
-        }
-
-        .modal-header h2 {
-          font-size: 1.25rem;
-          margin: 0;
-          font-weight: 600;
-          color: var(--text-primary);
-        }
-
-        .close-btn {
-          background: transparent;
-          border: none;
-          color: var(--text-secondary);
-          font-size: 1.2rem;
-          cursor: pointer;
-          padding: 4px;
-        }
-
-        .close-btn:hover {
-          color: var(--text-primary);
-        }
-
-        .modal-form {
-          padding: 1.5rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1rem;
-        }
-
-        .form-row {
-          display: flex;
-          gap: 1rem;
-        }
-
-        .form-group {
-          display: flex;
-          flex-direction: column;
-          gap: 0.35rem;
-          flex-grow: 1;
-        }
-
-        .form-group.half {
-          width: 50%;
-        }
-
-        .form-group.quarter {
-          width: 25%;
-        }
-
-        .form-group.three-quarter {
-          width: 75%;
-        }
-
-        .modal-form label {
-          font-size: 0.8rem;
-          color: var(--text-secondary);
-          font-weight: 500;
-        }
-
-        .modal-form input, .modal-form select {
-          background: var(--bg-main);
-          border: 1px solid var(--border-color);
-          border-radius: 8px;
-          padding: 0.6rem 0.8rem;
-          color: var(--text-primary);
-          font-size: 0.9rem;
-          width: 100%;
-        }
-
-        .modal-form input:focus, .modal-form select:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-        }
-
-        .modal-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 10px;
-          margin-top: 1rem;
-        }
-
-        .btn-cancel {
-          background: transparent;
-          border: 1px solid var(--border-color);
-          color: var(--text-primary);
-          padding: 0.6rem 1.2rem;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 500;
-          transition: all 0.2s;
-        }
-
-        .btn-cancel:hover {
-          background: var(--bg-surface-hover);
-        }
-
-        .btn-submit {
-          background: #3b82f6;
-          border: none;
-          color: #fff;
-          padding: 0.6rem 1.2rem;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-width: 110px;
-        }
-
-        .btn-submit:hover {
-          background: #2563eb;
-        }
-
-        .spinner-mini {
-          width: 16px;
-          height: 16px;
-          border: 2px solid rgba(255,255,255,0.3);
-          border-top-color: #fff;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-      `}</style>
+      <Modal isOpen={editModalOpen} onClose={() => setEditModalOpen(false)} title="Modify Staff Member">
+        {renderEmployeeForm(handleEditSubmit, 'Apply Changes')}
+      </Modal>
     </div>
   );
 }

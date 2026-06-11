@@ -98,16 +98,18 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <div className="demo-credentials-card" onClick={handleFillDemoCredentials}>
-          <div className="demo-header">
-            <i className="fa-solid fa-key"></i>
-            <span>Click to fill demo credentials</span>
+        {process.env.NEXT_PUBLIC_DEMO_MODE === 'true' && (
+          <div className="demo-credentials-card" onClick={handleFillDemoCredentials}>
+            <div className="demo-header">
+              <i className="fa-solid fa-key"></i>
+              <span>Click to fill demo credentials</span>
+            </div>
+            <div className="demo-body">
+              <div><strong>Email:</strong> aritra.naharay@gmail.com</div>
+              <div><strong>Password:</strong> PMetrix@123</div>
+            </div>
           </div>
-          <div className="demo-body">
-            <div><strong>Email:</strong> aritra.naharay@gmail.com</div>
-            <div><strong>Password:</strong> PMetrix@123</div>
-          </div>
-        </div>
+        )}
       </div>
 
       <style jsx>{`

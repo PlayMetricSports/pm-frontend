@@ -64,7 +64,7 @@ export default function Header() {
     <header className="top-header">
       <div className="search-bar">
         <i className="fa-solid fa-search"></i>
-        <input type="text" placeholder="Search bookings, clients, or inventory..." />
+        <input type="text" placeholder="Search (coming soon)..." disabled style={{ cursor: 'not-allowed', opacity: 0.6 }} />
       </div>
       <div className="header-actions">
         <button 
@@ -77,7 +77,6 @@ export default function Header() {
         </button>
         <button className="icon-btn">
           <i className="fa-solid fa-bell"></i>
-          <span className="badge">3</span>
         </button>
         
         <div ref={dropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>

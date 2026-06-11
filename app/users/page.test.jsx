@@ -4,6 +4,20 @@ import React from 'react';
 import UsersPage from './page';
 import { api } from '@/lib/api';
 
+// Mock useAuth
+let mockAuthUser = {
+  email: 'admin@playmetric.in',
+  userType: 'admin',
+  organization: 'Sportizo',
+};
+
+vi.mock('@/components/AuthContext', () => ({
+  useAuth: () => ({
+    user: mockAuthUser,
+    loading: false,
+  }),
+}));
+
 // Mock API layer
 vi.mock('@/lib/api', () => ({
   api: {
@@ -12,6 +26,7 @@ vi.mock('@/lib/api', () => ({
     getUserRoles: vi.fn(),
     createEmployee: vi.fn(),
     updateEmployee: vi.fn(),
+    getOrganisations: vi.fn(),
   },
 }));
 
@@ -56,9 +71,15 @@ describe('Users Page Directory tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockAuthUser = {
+      email: 'admin@playmetric.in',
+      userType: 'admin',
+      organization: 'Sportizo',
+    };
     api.getEmployees.mockResolvedValue({ success: true, data: mockEmployees });
     api.getMetadata.mockResolvedValue({ success: true, data: { userDeptList: [] } });
     api.getUserRoles.mockResolvedValue({ success: true, data: { userRole: [] } });
+    api.getOrganisations.mockResolvedValue({ success: true, data: [{ name: 'Sportizo' }, { name: 'PlayArena' }] });
   });
 
   afterEach(() => {
@@ -108,5 +129,52 @@ describe('Users Page Directory tests', () => {
     expect(screen.getByText('Vikram Singh')).toBeInTheDocument();
     expect(screen.queryByText('Rohan Mehta')).not.toBeInTheDocument();
     expect(screen.queryByText('Anjali Desai')).not.toBeInTheDocument();
+  });
+
+  it('should render organization select dropdown for admin with options', async () => {
+    // Current user is admin (default setup)
+    render(<UsersPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Rohan Mehta')).toBeInTheDocument();
+    });
+
+    const inviteBtn = screen.getByRole('button', { name: 'Invite Staff' });
+    fireEvent.click(inviteBtn);
+
+    // Verify modal is open and shows Organization select dropdown
+    const orgSelect = screen.getByLabelText('Organization');
+    expect(orgSelect).toBeInTheDocument();
+    expect(orgSelect).not.toBeDisabled();
+
+    // Verify default value is organisationsList[0] ("Sportizo")
+    expect(orgSelect.value).toBe('Sportizo');
+
+    // Verify options are present
+    expect(screen.getByRole('option', { name: 'Sportizo' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'PlayArena' })).toBeInTheDocument();
+  });
+
+  it('should lock organization dropdown selector to the parent org for normal employee', async () => {
+    // Current user is standard employee
+    mockAuthUser = {
+      email: 'rohan.coach@playmetric.in',
+      userType: 'employee',
+      organization: 'PlayArena',
+    };
+
+    render(<UsersPage />);
+    await waitFor(() => {
+      expect(screen.getByText('Rohan Mehta')).toBeInTheDocument();
+    });
+
+    const inviteBtn = screen.getByRole('button', { name: 'Invite Staff' });
+    fireEvent.click(inviteBtn);
+
+    // Verify organization dropdown is disabled/locked
+    const orgSelect = screen.getByLabelText('Organization');
+    expect(orgSelect).toBeDisabled();
+
+    // Verify option is set to user.organization ("PlayArena")
+    expect(orgSelect.value).toBe('PlayArena');
   });
 });

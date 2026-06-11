@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
 
   // Mapping from API submodule key to route details
   const routeMappings = {
@@ -60,7 +60,7 @@ export default function Sidebar() {
     }));
 
     // For presentation and completion, add other mock sections if admin/staff
-    if (user.userType === 'admin' || user.userRoleName?.toLowerCase() === 'admin' || user.isAdmin === 'yes') {
+    if (isAdmin) {
       sections.push({
         name: 'Operations (Mock)',
         items: [
