@@ -29,7 +29,7 @@ export default function SportsPage() {
   const [selectedSport, setSelectedSport] = useState(null);
   
   // Form
-  const [form, setForm] = useState({ name: '', orgId: '', venueId: '' });
+  const [form, setForm] = useState({ name: '', orgId: '', venueId: '', icon: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -137,10 +137,10 @@ export default function SportsPage() {
     setFormError('');
     if (mode === 'edit' && sportItem) {
       setSelectedSport(sportItem);
-      setForm({ name: sportItem.name || '', orgId: sportItem.orgId || '', venueId: sportItem.venueId || '' });
+      setForm({ name: sportItem.name || '', orgId: sportItem.orgId || '', venueId: sportItem.venueId || '', icon: sportItem.icon || '' });
     } else {
       setSelectedSport(null);
-      setForm({ name: '', orgId: orgs[0]?._id || '', venueId: venues[0]?._id || '' });
+      setForm({ name: '', orgId: orgs[0]?._id || '', venueId: venues[0]?._id || '', icon: '' });
     }
     setModalOpen(true);
   };
@@ -199,7 +199,9 @@ export default function SportsPage() {
     }
   };
 
-  const getSportIconClass = (name = '') => {
+  const getSportIconClass = (sport) => {
+    if (sport && sport.icon) return sport.icon;
+    const name = sport?.name || '';
     const lower = name.toLowerCase();
     if (lower.includes('badminton')) return 'fa-solid fa-shuttlecock';
     if (lower.includes('tennis')) return 'fa-solid fa-baseball-bat-ball';
@@ -208,6 +210,21 @@ export default function SportsPage() {
     if (lower.includes('cricket')) return 'fa-solid fa-cricket-bat-ball';
     return 'fa-solid fa-volleyball';
   };
+
+  const iconOptions = [
+    { value: '', label: 'Auto-detect from name' },
+    { value: 'fa-solid fa-volleyball', label: 'Volleyball' },
+    { value: 'fa-solid fa-shuttlecock', label: 'Badminton' },
+    { value: 'fa-solid fa-baseball-bat-ball', label: 'Tennis / Baseball' },
+    { value: 'fa-solid fa-football-board', label: 'Football / Soccer' },
+    { value: 'fa-solid fa-basketball', label: 'Basketball' },
+    { value: 'fa-solid fa-cricket-bat-ball', label: 'Cricket' },
+    { value: 'fa-solid fa-table-tennis-paddle-ball', label: 'Table Tennis' },
+    { value: 'fa-solid fa-golf-ball-tee', label: 'Golf' },
+    { value: 'fa-solid fa-bowling-ball', label: 'Bowling' },
+    { value: 'fa-solid fa-person-swimming', label: 'Swimming' },
+    { value: 'fa-solid fa-dumbbell', label: 'Gym / Fitness' },
+  ];
 
   const filteredSports = sports.filter(sport => {
     const matchesOrg = selectedOrgFilter === 'All' || sport.orgId === selectedOrgFilter;
@@ -283,7 +300,7 @@ export default function SportsPage() {
                     <td>
                       <div className="client-cell">
                         <div className="avatar-circle" style={{ background: 'linear-gradient(135deg, var(--accent-green), var(--accent-blue))' }}>
-                          <i className={getSportIconClass(sport.name)} style={{ fontSize: '0.95rem' }}></i>
+                          <i className={getSportIconClass(sport)} style={{ fontSize: '0.95rem' }}></i>
                         </div>
                         <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{sport.name}</span>
                       </div>
@@ -326,6 +343,17 @@ export default function SportsPage() {
           <div className="form-group">
             <label>Sport Name</label>
             <input type="text" name="name" value={form.name} onChange={handleInputChange} required placeholder="e.g. Badminton" />
+          </div>
+          <div className="form-group">
+            <label>Sport Icon</label>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <select name="icon" value={form.icon} onChange={handleInputChange} style={{ flex: 1 }}>
+                {iconOptions.map(opt => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+              </select>
+              <div style={{ width: '40px', height: '40px', minWidth: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent-green), var(--accent-blue))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+                <i className={form.icon || getSportIconClass({ name: form.name })}></i>
+              </div>
+            </div>
           </div>
           <div className="form-group">
             <label>Organisation</label>
