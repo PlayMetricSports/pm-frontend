@@ -203,22 +203,21 @@ export default function SportsPage() {
     if (sport && sport.icon) return sport.icon;
     const name = sport?.name || '';
     const lower = name.toLowerCase();
-    if (lower.includes('badminton')) return 'fa-solid fa-shuttlecock';
+    if (lower.includes('badminton')) return 'fa-solid fa-feather';
     if (lower.includes('tennis')) return 'fa-solid fa-baseball-bat-ball';
-    if (lower.includes('football') || lower.includes('soccer')) return 'fa-solid fa-football-board';
+    if (lower.includes('football') || lower.includes('soccer')) return 'fa-solid fa-futbol';
     if (lower.includes('basketball')) return 'fa-solid fa-basketball';
-    if (lower.includes('cricket')) return 'fa-solid fa-cricket-bat-ball';
+    if (lower.includes('cricket')) return 'fa-solid fa-baseball-bat-ball';
     return 'fa-solid fa-volleyball';
   };
 
   const iconOptions = [
     { value: '', label: 'Auto-detect from name' },
     { value: 'fa-solid fa-volleyball', label: 'Volleyball' },
-    { value: 'fa-solid fa-shuttlecock', label: 'Badminton' },
-    { value: 'fa-solid fa-baseball-bat-ball', label: 'Tennis / Baseball' },
-    { value: 'fa-solid fa-football-board', label: 'Football / Soccer' },
+    { value: 'fa-solid fa-feather', label: 'Badminton' },
+    { value: 'fa-solid fa-baseball-bat-ball', label: 'Tennis / Baseball / Cricket' },
+    { value: 'fa-solid fa-futbol', label: 'Football / Soccer' },
     { value: 'fa-solid fa-basketball', label: 'Basketball' },
-    { value: 'fa-solid fa-cricket-bat-ball', label: 'Cricket' },
     { value: 'fa-solid fa-table-tennis-paddle-ball', label: 'Table Tennis' },
     { value: 'fa-solid fa-golf-ball-tee', label: 'Golf' },
     { value: 'fa-solid fa-bowling-ball', label: 'Bowling' },

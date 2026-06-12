@@ -18,6 +18,7 @@ export default function Sidebar() {
     'venues': { label: 'Venues', icon: 'fa-map-pin', href: '/venues' },
     'sports': { label: 'Sports', icon: 'fa-volleyball', href: '/sports' },
     'organisation': { label: 'Organisations', icon: 'fa-sitemap', href: '/organisation' },
+    'timeslot': { label: 'Timeslots', icon: 'fa-clock', href: '/timeslot' },
     'actions': { label: 'Actions Config', icon: 'fa-key', href: '/actions' }
   };
 

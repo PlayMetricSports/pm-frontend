@@ -5,6 +5,21 @@ import { configure } from '@testing-library/react';
 configure({ asyncUtilTimeout: 5000 });
 
 if (typeof window !== 'undefined') {
+  // Setup global fetch mock
+  global.fetch = vi.fn();
+
+  // Suppress known React test warnings
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    if (
+      typeof args[0] === 'string' &&
+      (args[0].includes('for a non-boolean attribute') || args[0].includes('jsx'))
+    ) {
+      return;
+    }
+    originalConsoleError(...args);
+  };
+
   const createStorageMock = () => {
     let store = {};
     return {

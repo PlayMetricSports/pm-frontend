@@ -89,7 +89,10 @@ describe('Users Page Directory tests', () => {
 
   it('should render page title and headers', async () => {
     render(<UsersPage />);
-    expect(screen.getByText('Users & Staff')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText('Users & Staff')).toBeInTheDocument();
+      expect(screen.getByText('Rohan Mehta')).toBeInTheDocument();
+    });
   });
 
   it('should fetch and render employees list on mount', async () => {

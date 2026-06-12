@@ -25,6 +25,12 @@ export default defineConfig({
     setupFiles: ['./vitest.setup.js'],
     globals: true,
     testTimeout: 15000,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['app/**/*.js', 'app/**/*.jsx', 'components/**/*.js', 'components/**/*.jsx', 'lib/**/*.js'],
+      exclude: ['**/*.test.*', '**/*.spec.*', 'app/layout.js']
+    }
   },
   resolve: {
     alias: {

@@ -197,6 +197,7 @@ export function AuthGuard({ children }) {
     '/sports': 'ac-107',                 // Sports configuration
     '/venues': 'ac-108',                 // Venues configuration
     '/organisation': 'ac-109',           // Organisations configuration
+    '/timeslot': 'ac-110',               // Timeslots configuration
     '/actions': 'ac-101'                 // Actions configuration
   };
 
